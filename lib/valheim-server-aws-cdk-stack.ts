@@ -1,13 +1,24 @@
-import * as cdk from "@aws-cdk/core";
-import * as ec2 from "@aws-cdk/aws-ec2";
-import * as ecs from "@aws-cdk/aws-ecs";
-import * as secretsManager from "@aws-cdk/aws-secretsmanager";
-import * as efs from "@aws-cdk/aws-efs";
-import { validateCfnTag } from "@aws-cdk/core";
-import { runInThisContext } from "vm";
+import { Construct } from "constructs";
+import * as cdk from "aws-cdk-lib";
+import * as ec2 from "aws-cdk-lib/aws-ec2";
+import * as ecs from "aws-cdk-lib/aws-ecs";
+import * as secretsManager from "aws-cdk-lib/aws-secretsmanager";
+import * as efs from "aws-cdk-lib/aws-efs";
+import { PasswordAuthenticatedFtp } from "./ftp/password-authenticated-ftp";
+import { FtpUser } from "./ftp/ftp-user";
+import { ServerApi } from "./api/server-api";
+
+export interface ValheimServerProps extends cdk.StackProps {
+  /**
+   * Initialize an FTP transfer server
+   */
+  readonly useFTP?: boolean;
+
+  readonly useServerStatusAPI?: boolean;
+}
 
 export class ValheimServerAwsCdkStack extends cdk.Stack {
-  constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
+  constructor(scope: Construct, id: string, props?: ValheimServerProps) {
     super(scope, id, props);
 
     // MUST BE DEFINED BEFORE RUNNING CDK DEPLOY! Key Value should be: VALHEIM_SERVER_PASS
@@ -36,6 +47,20 @@ export class ValheimServerAwsCdkStack extends cdk.Stack {
       vpc: vpc,
       encrypted: true,
     });
+
+    if (props?.useFTP) {
+      // an AWS Transfer server
+      const ftp = new PasswordAuthenticatedFtp(this, `Ftp`, {
+        protocol: "SFTP",
+      });
+
+      // You can specify password explicitly
+      new FtpUser(this, `user`, {
+        transferServerId: ftp.server.attrServerId,
+        accessibleFS: serverFileSystem,
+        password: "password",
+      });
+    }
 
     const serverVolumeConfig: ecs.Volume = {
       name: "valheimServerVolume",
@@ -66,16 +91,17 @@ export class ValheimServerAwsCdkStack extends cdk.Stack {
       image: ecs.ContainerImage.fromRegistry("lloesche/valheim-server"),
       logging: ecs.LogDrivers.awsLogs({ streamPrefix: "ValheimServer" }),
       environment: {
-        SERVER_NAME: "VALHEIM-SERVER-AWS-ECS",
+        SERVER_NAME: "ValheimWithFriends",
         SERVER_PORT: "2456",
-        WORLD_NAME: "VALHEIM-WORLD-FILE",
-        SERVER_PUBLIC: "1",
+        WORLD_NAME: "warzone",
+        SERVER_PUBLIC: "true",
         UPDATE_INTERVAL: "900",
         BACKUPS_INTERVAL: "3600",
         BACKUPS_DIRECTORY: "/config/backups",
         BACKUPS_MAX_AGE: "3",
         BACKUPS_DIRECTORY_PERMISSIONS: "755",
         BACKUPS_FILE_PERMISSIONS: "644",
+        BEPINEX: "true",
         CONFIG_DIRECTORY_PERMISSIONS: "755",
         WORLDS_DIRECTORY_PERMISSIONS: "755",
         WORLDS_FILE_PERMISSIONS: "644",
@@ -114,7 +140,7 @@ export class ValheimServerAwsCdkStack extends cdk.Stack {
     const valheimService = new ecs.FargateService(this, "valheimService", {
       cluster: fargateCluster,
       taskDefinition: valheimTaskDefinition,
-      desiredCount: 1,
+      desiredCount: 0,
       assignPublicIp: true,
       platformVersion: ecs.FargatePlatformVersion.VERSION1_4,
     });
@@ -129,6 +155,15 @@ export class ValheimServerAwsCdkStack extends cdk.Stack {
       })
     );
 
+    if (props?.useServerStatusAPI) {
+      new ServerApi(this, "ServerApi", {
+        region: this.region,
+        service: valheimService,
+        clusterArn: fargateCluster.clusterArn,
+        password: "doodle",
+      });
+    }
+
     new cdk.CfnOutput(this, "serviceName", {
       value: valheimService.serviceName,
       exportName: "fargateServiceName",
@@ -136,11 +171,11 @@ export class ValheimServerAwsCdkStack extends cdk.Stack {
 
     new cdk.CfnOutput(this, "clusterArn", {
       value: fargateCluster.clusterName,
-      exportName:"fargateClusterName"
+      exportName: "fargateClusterName",
     });
 
     new cdk.CfnOutput(this, "EFSId", {
-      value: serverFileSystem.fileSystemId
-    })
+      value: serverFileSystem.fileSystemId,
+    });
   }
 }
