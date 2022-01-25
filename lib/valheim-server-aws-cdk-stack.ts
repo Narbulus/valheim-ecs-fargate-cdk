@@ -7,6 +7,8 @@ import * as efs from "aws-cdk-lib/aws-efs";
 import { PasswordAuthenticatedFtp } from "./ftp/password-authenticated-ftp";
 import { FtpUser } from "./ftp/ftp-user";
 import { ServerApi } from "./api/server-api";
+import { applyWebooks } from "./discord/apply-webhooks";
+import { DiscordBot } from "./discord/discord-bot";
 
 export interface ValheimServerProps extends cdk.StackProps {
   /**
@@ -15,6 +17,9 @@ export interface ValheimServerProps extends cdk.StackProps {
   readonly useFTP?: boolean;
 
   readonly useServerStatusAPI?: boolean;
+
+  readonly useDiscordWebhookIntegration?: boolean;
+  readonly useDiscordBotIntegration?: boolean;
 }
 
 export class ValheimServerAwsCdkStack extends cdk.Stack {
@@ -134,8 +139,10 @@ export class ValheimServerAwsCdkStack extends cdk.Stack {
         protocol: ecs.Protocol.UDP,
       }
     );
-
     container.addMountPoints(mountPoint);
+    if (props?.useDiscordWebhookIntegration) {
+      applyWebooks(container, "FIXME");
+    }
 
     const valheimService = new ecs.FargateService(this, "valheimService", {
       cluster: fargateCluster,
@@ -157,10 +164,20 @@ export class ValheimServerAwsCdkStack extends cdk.Stack {
 
     if (props?.useServerStatusAPI) {
       new ServerApi(this, "ServerApi", {
+        clusterArn: fargateCluster.clusterArn,
+        containerDefinition: container,
+        password: "doodle",
         region: this.region,
         service: valheimService,
+      });
+    }
+
+    if (props?.useDiscordBotIntegration) {
+      new DiscordBot(this, "DiscordBot", {
         clusterArn: fargateCluster.clusterArn,
-        password: "doodle",
+        containerDefinition: container,
+        region: this.region,
+        service: valheimService,
       });
     }
 

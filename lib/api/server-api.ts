@@ -5,13 +5,14 @@ import * as logs from "aws-cdk-lib/aws-logs";
 import * as lambda from "aws-cdk-lib/aws-lambda-nodejs";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { Construct } from "constructs";
-import { FargateService } from "aws-cdk-lib/aws-ecs";
+import { ContainerDefinition, FargateService } from "aws-cdk-lib/aws-ecs";
 import { Effect, Policy, PolicyStatement } from "aws-cdk-lib/aws-iam";
 
 export interface ServerApiProps {
   region: string;
   service: FargateService;
   clusterArn: cdk.Arn;
+  containerDefinition: ContainerDefinition;
   /**
    * Password for the server status API
    */

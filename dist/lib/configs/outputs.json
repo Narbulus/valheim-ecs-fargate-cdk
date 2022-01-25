@@ -1,0 +1,10 @@
+{
+  "ValheimServerAwsCdkStack": {
+    "ServerApiServerRestAPIEndpoint3B567138": "https://yu16lj1sa1.execute-api.us-west-2.amazonaws.com/prod/",
+    "EFSId": "fs-0b685ae2e9310e7ed",
+    "clusterArn": "ValheimServerAwsCdkStack-fargateCluster7F3D820B-WInTwiLWdvnD",
+    "DiscordBotdiscordbotendpointdiscordSecretNameAB04D0AF": "DiscordBotdiscordbotendpoin-j5VDKwRuvDVf",
+    "serviceName": "ValheimServerAwsCdkStack-valheimService6CC6232D-GoXwada13WQY",
+    "DiscordBotdiscordbotendpointdiscordbotapiEndpointA337480D": "https://1bgkh15br2.execute-api.us-west-2.amazonaws.com/prod/"
+  }
+}

@@ -7,6 +7,7 @@
     ],
     "declaration": true,
     "strict": true,
+    "outDir": "dist/",
     "noImplicitAny": true,
     "strictNullChecks": true,
     "noImplicitThis": true,
@@ -19,10 +20,15 @@
     "inlineSources": true,
     "experimentalDecorators": true,
     "strictPropertyInitialization": false,
+    "resolveJsonModule": true,
     "typeRoots": [
       "./node_modules/@types"
     ]
   },
+  "include": [
+    "bin/**/*.ts",
+    "lib/**/*.ts"
+  ],
   "exclude": [
     "node_modules",
     "cdk.out"

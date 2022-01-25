@@ -7,4 +7,6 @@ const app = new cdk.App();
 new ValheimServerAwsCdkStack(app, "ValheimServerAwsCdkStack", {
   useFTP: false,
   useServerStatusAPI: true,
+  useDiscordWebhookIntegration: true,
+  useDiscordBotIntegration: true,
 });
