@@ -27,13 +27,14 @@
     "@aws-cdk/aws-lambda-python-alpha": "^2.0.0-alpha.11",
     "@aws-sdk/client-ec2": "^3.48.0",
     "@aws-sdk/client-ecs": "^3.48.0",
-    "@spenhand/discord-bot-cdk-construct": "^0.2.2",
     "aws-cdk": "^2.8.0",
     "aws-cdk-lib": "^2.0.0",
     "aws-sdk": "^2.1063.0",
+    "axios": "^0.25.0",
     "constructs": "^10.0.0",
     "lodash": "^4.17.21",
     "slash-commands": "^1.5.0",
-    "source-map-support": "^0.5.16"
+    "source-map-support": "^0.5.16",
+    "tweetnacl": "^1.0.3"
   }
 }

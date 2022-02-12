@@ -2,19 +2,16 @@
 
 import { APIGatewayProxyHandler } from "aws-lambda";
 import { getResponse, updateServerConfiguration } from "./utils";
+import * as config from "../../config.json";
+import { getSecret } from "../utils";
 
 const REGION = process.env.REGION;
 const SERVICE_NAME = process.env.SERVICE_NAME;
 const CLUSTER_ARN = process.env.CLUSTER_ARN;
-const PASSWORD = process.env.PASSWORD;
 
 const handler: APIGatewayProxyHandler = async (event, context, callback) => {
   if (!REGION || !SERVICE_NAME || !CLUSTER_ARN) {
-    return {
-      statusCode: 500,
-      headers: {},
-      body: "Lambda environment not bootstrapped correctly",
-    };
+    return getResponse(500, "Lambda environment not bootstrapped correctly");
   }
 
   const { action, key } = event.headers;
@@ -25,7 +22,13 @@ const handler: APIGatewayProxyHandler = async (event, context, callback) => {
   }
   const startServer = action == "start";
 
-  if (key == PASSWORD) {
+  const password = await getSecret(config.httpServer.secrets.password);
+  if (!password) {
+    return getResponse(400, "Unable to load lambda configuration");
+  }
+
+  // TOOD: get this field from the actual config file and rename this variable
+  if (password && key == password) {
     if (startServer) {
       console.log("Starting service ");
     } else {

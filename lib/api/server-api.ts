@@ -3,20 +3,17 @@ import * as transfer from "aws-cdk-lib/aws-transfer";
 import * as agw from "aws-cdk-lib/aws-apigateway";
 import * as logs from "aws-cdk-lib/aws-logs";
 import * as lambda from "aws-cdk-lib/aws-lambda-nodejs";
-import * as iam from "aws-cdk-lib/aws-iam";
 import { Construct } from "constructs";
 import { ContainerDefinition, FargateService } from "aws-cdk-lib/aws-ecs";
 import { Effect, Policy, PolicyStatement } from "aws-cdk-lib/aws-iam";
+import { ISecret } from "aws-cdk-lib/aws-secretsmanager";
 
 export interface ServerApiProps {
   region: string;
   service: FargateService;
   clusterArn: cdk.Arn;
   containerDefinition: ContainerDefinition;
-  /**
-   * Password for the server status API
-   */
-  readonly password: string;
+  readonly configurationSecret: ISecret;
 }
 
 export class ServerApi extends Construct {
@@ -58,10 +55,7 @@ export class ServerApi extends Construct {
     serverStatusHandler.role?.attachInlinePolicy(ecsStatusPolicy);
 
     const serverUpdateHandler = new lambda.NodejsFunction(this, "update", {
-      environment: {
-        ...lambdaEnv,
-        PASSWORD: props.password,
-      },
+      environment: lambdaEnv,
     });
     const ecsUpdatePolicy = new Policy(this, "ecsUpdatePolicy", {
       statements: [
@@ -73,6 +67,7 @@ export class ServerApi extends Construct {
       ],
     });
     serverUpdateHandler.role?.attachInlinePolicy(ecsUpdatePolicy);
+    props.configurationSecret.grantRead(serverUpdateHandler);
 
     const route = api.root;
     route.addMethod("GET", new agw.LambdaIntegration(serverStatusHandler));

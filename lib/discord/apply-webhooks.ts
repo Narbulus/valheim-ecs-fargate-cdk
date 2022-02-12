@@ -1,10 +1,6 @@
 import { ContainerDefinition } from "aws-cdk-lib/aws-ecs";
 
-export function applyWebooks(
-  containerDefinition: ContainerDefinition,
-  discordWebhookURL: string
-): void {
-  containerDefinition.addEnvironment("DISCORD_WEBHOOK", discordWebhookURL);
+export function applyWebooks(containerDefinition: ContainerDefinition): void {
   containerDefinition.addEnvironment(
     "PRE_START_HOOK",
     formatWebhookCommand("Server is starting up...")
@@ -28,5 +24,5 @@ export function applyWebooks(
 }
 
 function formatWebhookCommand(message: string): string {
-  return `curl -sfSL -X POST -H "Content-Type: application/json" -d "{\\"username\\":\\"ValheimServer\\",\\"content\\":\\"${message}\\"}" "$DISCORD_WEBHOOK"`;
+  return `curl -sfSL -X POST -H "Content-Type: application/json" -d "{\\"username\\":\\"ValheimServer\\",\\"content\\":\\"${message}\\"}" "$DISCORD_WEBHOOK_URL"`;
 }

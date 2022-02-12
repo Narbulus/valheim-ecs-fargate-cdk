@@ -4,9 +4,4 @@ import * as cdk from "aws-cdk-lib";
 import { ValheimServerAwsCdkStack } from "../lib/valheim-server-aws-cdk-stack";
 
 const app = new cdk.App();
-new ValheimServerAwsCdkStack(app, "ValheimServerAwsCdkStack", {
-  useFTP: false,
-  useServerStatusAPI: true,
-  useDiscordWebhookIntegration: true,
-  useDiscordBotIntegration: true,
-});
+new ValheimServerAwsCdkStack(app, "ValheimServerAwsCdkStack");

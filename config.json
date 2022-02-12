@@ -1,0 +1,39 @@
+{
+  "configSecretName": "ValheimServerSecret",
+  "server": {
+    "name": "ValheimWithFriends",
+    "worldName": "warzone",
+    "secrets": {
+      "password": "SERVER_PASSWORD"
+    },
+    "env": {
+    }
+  },
+  "ftp": {
+    "enabled": false,
+    "secrets": {
+      "password": "FTP_PASSWORD"
+    }
+  },
+  "httpServer": {
+    "enabled": true,
+    "secrets": {
+      "password": "HTTP_SERVER_PASSWORD"
+    }
+  },
+  "discordWebhook": {
+    "enabled": true,
+    "secrets": {
+      "webhookUrl": "DISCORD_WEBHOOK_URL"
+    }
+  },
+  "discordBot": {
+    "enabled": true,
+    "secrets": {
+      "authToken": "DISCORD_BOT_AUTH_TOKEN",
+      "clientId": "DISCORD_BOT_CLIENT_ID",
+      "publicKey": "DISCORD_BOT_PUBLIC_KEY",
+      "serverId": "DISCORD_BOT_SERVER_ID"
+    }
+  }
+}

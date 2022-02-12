@@ -1,12 +1,9 @@
 import { Context, Callback } from "aws-lambda";
-import {
-  DiscordEventRequest,
-  DiscordResponseData,
-  verifyEvent,
-} from "@spenhand/discord-bot-cdk-construct";
 import { Embed } from "slash-commands";
 import { sendResponse } from "./utils";
 import { getCurrentServerIP, updateServerConfiguration } from "../api/utils";
+import { DiscordEventRequest, DiscordResponseData } from "./types";
+import { verifyEvent } from "./discord-bot.validator";
 
 const REGION = process.env.REGION;
 const SERVICE_NAME = process.env.SERVICE_NAME;

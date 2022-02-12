@@ -2,6 +2,7 @@ import { Construct } from "constructs";
 import * as sm from "aws-cdk-lib/aws-secretsmanager";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as efs from "aws-cdk-lib/aws-efs";
+import { ISecret } from "aws-cdk-lib/aws-secretsmanager";
 
 export interface FtpUserProps {
   /**
@@ -10,13 +11,6 @@ export interface FtpUserProps {
    * @default - lowercase of its construct id
    */
   readonly userName?: string;
-
-  /**
-   * password for this user
-   *
-   * @default - password is randomly generated
-   */
-  readonly password?: string;
 
   /**
    * the id of transfer server for this user
@@ -48,9 +42,8 @@ export class FtpUser extends Construct {
         secretStringTemplate: JSON.stringify({
           Role: userRole.roleArn,
           HomeDirectory: `/${props.accessibleFS.fileSystemId}/`,
-          Password: props.password,
         }),
-        generateStringKey: props.password == null ? "Password" : "Dummy",
+        generateStringKey: "Password",
         excludePunctuation: true,
       },
     });

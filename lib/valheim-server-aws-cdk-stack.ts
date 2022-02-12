@@ -9,28 +9,17 @@ import { FtpUser } from "./ftp/ftp-user";
 import { ServerApi } from "./api/server-api";
 import { applyWebooks } from "./discord/apply-webhooks";
 import { DiscordBot } from "./discord/discord-bot";
-
-export interface ValheimServerProps extends cdk.StackProps {
-  /**
-   * Initialize an FTP transfer server
-   */
-  readonly useFTP?: boolean;
-
-  readonly useServerStatusAPI?: boolean;
-
-  readonly useDiscordWebhookIntegration?: boolean;
-  readonly useDiscordBotIntegration?: boolean;
-}
+import * as config from "../config.json";
 
 export class ValheimServerAwsCdkStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props?: ValheimServerProps) {
+  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
     // MUST BE DEFINED BEFORE RUNNING CDK DEPLOY! Key Value should be: VALHEIM_SERVER_PASS
-    const valheimServerPass = secretsManager.Secret.fromSecretNameV2(
+    const valheimConfigurationSecret = secretsManager.Secret.fromSecretNameV2(
       this,
-      "predefinedValheimServerPass",
-      "valheimServerPass"
+      config.configSecretName, // TODO Should these be the same?
+      config.configSecretName
     );
 
     const vpc = new ec2.Vpc(this, "valheimVpc", {
@@ -53,7 +42,7 @@ export class ValheimServerAwsCdkStack extends cdk.Stack {
       encrypted: true,
     });
 
-    if (props?.useFTP) {
+    if (config.ftp.enabled) {
       // an AWS Transfer server
       const ftp = new PasswordAuthenticatedFtp(this, `Ftp`, {
         protocol: "SFTP",
@@ -63,7 +52,6 @@ export class ValheimServerAwsCdkStack extends cdk.Stack {
       new FtpUser(this, `user`, {
         transferServerId: ftp.server.attrServerId,
         accessibleFS: serverFileSystem,
-        password: "password",
       });
     }
 
@@ -96,9 +84,9 @@ export class ValheimServerAwsCdkStack extends cdk.Stack {
       image: ecs.ContainerImage.fromRegistry("lloesche/valheim-server"),
       logging: ecs.LogDrivers.awsLogs({ streamPrefix: "ValheimServer" }),
       environment: {
-        SERVER_NAME: "ValheimWithFriends",
+        SERVER_NAME: config.server.name,
         SERVER_PORT: "2456",
-        WORLD_NAME: "warzone",
+        WORLD_NAME: config.server.worldName,
         SERVER_PUBLIC: "true",
         UPDATE_INTERVAL: "900",
         BACKUPS_INTERVAL: "3600",
@@ -116,9 +104,16 @@ export class ValheimServerAwsCdkStack extends cdk.Stack {
       },
       secrets: {
         SERVER_PASS: ecs.Secret.fromSecretsManager(
-          valheimServerPass,
-          "VALHEIM_SERVER_PASS"
+          valheimConfigurationSecret,
+          config.server.secrets.password
         ),
+        // Conditionally include webhook so we can use it in server hook
+        ...(config.discordWebhook.enabled && {
+          DISCORD_WEBHOOK_URL: ecs.Secret.fromSecretsManager(
+            valheimConfigurationSecret,
+            config.discordWebhook.secrets.webhookUrl
+          ),
+        }),
       },
     });
 
@@ -140,8 +135,8 @@ export class ValheimServerAwsCdkStack extends cdk.Stack {
       }
     );
     container.addMountPoints(mountPoint);
-    if (props?.useDiscordWebhookIntegration) {
-      applyWebooks(container, "FIXME");
+    if (config.discordWebhook.enabled) {
+      applyWebooks(container);
     }
 
     const valheimService = new ecs.FargateService(this, "valheimService", {
@@ -162,19 +157,20 @@ export class ValheimServerAwsCdkStack extends cdk.Stack {
       })
     );
 
-    if (props?.useServerStatusAPI) {
+    if (config.httpServer.enabled) {
       new ServerApi(this, "ServerApi", {
         clusterArn: fargateCluster.clusterArn,
         containerDefinition: container,
-        password: "doodle",
+        configurationSecret: valheimConfigurationSecret,
         region: this.region,
         service: valheimService,
       });
     }
 
-    if (props?.useDiscordBotIntegration) {
+    if (config.discordBot.enabled) {
       new DiscordBot(this, "DiscordBot", {
         clusterArn: fargateCluster.clusterArn,
+        configurationSecret: valheimConfigurationSecret,
         containerDefinition: container,
         region: this.region,
         service: valheimService,

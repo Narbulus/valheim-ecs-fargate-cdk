@@ -1,9 +1,10 @@
 import { AWSError, SecretsManager } from "aws-sdk";
 import { GetSecretValueResponse } from "aws-sdk/clients/secretsmanager";
 import { DiscordInteractions } from "slash-commands";
-import { DiscordSecrets } from "@spenhand/discord-bot-cdk-construct";
 import * as Stacks from "../configs/outputs.json";
 import * as _ from "lodash";
+import { getSecret } from "../utils";
+import * as config from "../../config.json";
 
 const commands = [
   {
@@ -40,11 +41,14 @@ secretsManager.getSecretValue(
   async (err?: AWSError, data?: GetSecretValueResponse) => {
     if (data?.SecretString) {
       try {
-        const discordSecrets: DiscordSecrets = JSON.parse(data.SecretString);
+        const clientId = await getSecret(config.discordBot.secrets.clientId);
+        const authToken = await getSecret(config.discordBot.secrets.authToken);
+        const publicKey = await getSecret(config.discordBot.secrets.publicKey);
+
         const interaction = new DiscordInteractions({
-          applicationId: discordSecrets.clientId,
-          authToken: discordSecrets.authToken,
-          publicKey: discordSecrets.publicKey,
+          applicationId: clientId,
+          authToken: authToken,
+          publicKey: publicKey,
         });
 
         const inputArgs = process.argv.slice(2);
